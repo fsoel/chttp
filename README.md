@@ -27,4 +27,3 @@ int main(void) {
 ## Limitations
 
 - Only HTTP/0.9 is fully implemented.
-- Supports up to 16 routes—modify route list size as needed.

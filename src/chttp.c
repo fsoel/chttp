@@ -1,5 +1,6 @@
 #include "chttp.h"
 #include "http_vers.h"
+#include "list.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -32,7 +33,7 @@ static void http_handle_client(int);
 static int network_init(void);
 static void network_cleanup(void);
 
-static chttp_route_t route_list[16];
+static list_t *route_list = NULL;
 static int route_count = 0;
 
 /* Detects the HTTP version of the request */
@@ -73,16 +74,17 @@ static void handle_http_09(int client_sock, const char *request) {
     char path[128];
     strncpy(path, request, path_len);
     path[path_len] = '\0';
-    
+
     // Trim any trailing newline or carriage return characters
-    while(path_len > 0 && (path[path_len - 1] == '\n' || path[path_len - 1] == '\r')) {
+    while (path_len > 0 && (path[path_len - 1] == '\n' || path[path_len - 1] == '\r')) {
         path[--path_len] = '\0';
     }
 
     // Compare with registered routes
     for (int i = 0; i < route_count; i++) {
-        if (strcmp(path, route_list[i].path) == 0) {
-            send(client_sock, route_list[i].response, strlen(route_list[i].response),
+        chttp_route_t *route = (chttp_route_t *)list_front(route_list);
+        if (strcmp(path, route->path) == 0) {
+            send(client_sock, route->response, strlen(route->response),
                  0);
             return;
         }
@@ -142,7 +144,7 @@ void chttp_start_server(int port) {
     }
 
     SOCKET_TYPE server_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if ((int) server_sock < 0) {
+    if ((int)server_sock < 0) {
         perror("socket");
         network_cleanup();
         exit(EXIT_FAILURE);
@@ -185,7 +187,7 @@ void chttp_start_server(int port) {
         socklen_t client_len = sizeof(client_addr);
         SOCKET_TYPE client_sock =
             accept(server_sock, (SOCKADDR_TYPE *)&client_addr, &client_len);
-        if ((int) client_sock < 0) {
+        if ((int)client_sock < 0) {
             perror("accept");
             break;
         }
@@ -194,13 +196,23 @@ void chttp_start_server(int port) {
 
     CLOSESOCKET(server_sock);
     network_cleanup();
+    list_destroy(route_list);
 }
 
-/* Add a route for HTTP/0.9 */
+/* Add a route for HTTP */
 void chttp_add_route(const char *path, const char *response) {
-    if (route_count < 16) {
-        route_list[route_count].path = path;
-        route_list[route_count].response = response;
-        route_count++;
+    if (route_list == NULL) {
+        route_list = list_create();
     }
+
+    chttp_route_t *route = (chttp_route_t *)malloc(sizeof(chttp_route_t));
+    if (!route) {
+        return;
+    }
+
+    route->path = path;
+    route->response = response;
+
+    list_push_back(route_list, route);
+    route_count++;
 }
