@@ -107,22 +107,22 @@ void *list_pop_front(list_t *list) {
     return data;
 }
 
-// Return the element at the front of the list
+// Return the list element at the front of the list
 void *list_front(list_t *list) {
     if (list->size == 0) {
         return NULL;
     }
 
-    return list->head->data;
+    return list->head;
 }
 
-// Return the element at the back of the list
+// Return the list element at the back of the list
 void *list_back(list_t *list) {
     if (list->size == 0) {
         return NULL;
     }
 
-    return list->tail->data;
+    return list->tail;
 }
 
 // Return the number of elements in the list
@@ -135,4 +135,9 @@ void list_clear(list_t *list) {
     while (list->size > 0) {
         list_pop_front(list);
     }
+}
+
+// Return the next element in the list after the given node
+void *list_next(void *node) {
+    return ((list_node_t *)node)->next;
 }

@@ -24,5 +24,6 @@ void *list_front(list_t *);
 void *list_back(list_t *);
 size_t list_size(list_t *);
 void list_clear(list_t *);
+void *list_next(void *);
 
 #endif // LIST_H

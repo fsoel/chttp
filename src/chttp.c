@@ -81,13 +81,15 @@ static void handle_http_09(int client_sock, const char *request) {
     }
 
     // Compare with registered routes
+    list_node_t *element = (list_node_t *)list_front(route_list);
     for (int i = 0; i < route_count; i++) {
-        chttp_route_t *route = (chttp_route_t *)list_front(route_list);
+        chttp_route_t *route = (chttp_route_t *)element->data;
         if (strcmp(path, route->path) == 0) {
             send(client_sock, route->response, strlen(route->response),
                  0);
             return;
         }
+        element = (list_node_t *)list_next(element);
     }
 
     send(client_sock, "404 Not Found\n", 14, 0);
